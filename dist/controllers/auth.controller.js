@@ -11,13 +11,30 @@ const db_1 = require("../config/db");
 const registerUser = async (req, res) => {
     const { username, email, password } = req.body;
     try {
+        // Check for existing username or email
+        const existingUser = await db_1.prisma.user.findFirst({
+            where: {
+                OR: [{ username }, { email }],
+            },
+        });
+        if (existingUser) {
+            let conflictField = existingUser.username === username ? 'username' : 'email';
+            return res
+                .status(409)
+                .json({ message: `A user with this ${conflictField} already exists.` });
+        }
         const hashedPassword = await bcrypt_1.default.hash(password, 10);
         const user = await db_1.prisma.user.create({
             data: { username, email, password: hashedPassword },
         });
         res
             .status(201)
-            .json({ message: 'Registration successfuly', data: user.id, username: user.username, email: user.email });
+            .json({
+            message: 'Registration successfuly',
+            data: user.id,
+            username: user.username,
+            email: user.email,
+        });
     }
     catch (err) {
         res.status(500).json({ message: 'Error creating user', error: err });
@@ -34,7 +51,7 @@ const loginUser = async (req, res) => {
         const token = jsonwebtoken_1.default.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, {
             expiresIn: '1d',
         });
-        res.status(200).json({ message: "Login successful", token });
+        res.status(200).json({ message: 'Login successful', token });
     }
     catch (err) {
         res.status(500).json({ message: 'Login error', error: err });
