@@ -1,7 +1,6 @@
 /** @format */
 
-import { PrismaClient } from '../generated/prisma';
-
+import { PrismaClient } from '@prisma/client';
 
 class Database {
   private static instance: Database;
